@@ -1,0 +1,59 @@
+html {
+  background: #000;
+}
+#canvas1 {
+  border: 1px solid gray;
+  background:url('bg.png');
+}
+#legend {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  border: 1px solid #fff;
+  background-color: rgba(0,0,0,0.3);
+}
+#reset {
+  position: absolute;
+  border: 1px solid #fff;
+  top: 30px;
+  left: 30px;
+  padding: 5px;
+  text-transform: uppercase;
+  color: #fff;
+  font-family: arial;
+  font-weight: bold;
+  font-size: 12px;
+}
+#reset:hover {
+  color: red;
+  border-color: red;
+  cursor: pointer;
+}
+#vals {
+  position: absolute;
+  right: 60px;
+  top: 40px;
+  list-style-type: none;
+  color: #fff;
+  font-family: arial;
+  width: 310px;
+}
+#vals li {
+  list-style-type: none;
+  padding: 5px;
+  height: 45px;
+  border-bottom: 1px solid rgba(0,0,0,0.1);
+}
+
+#vals li span.title {
+  display: inline-block;
+  float: left;
+  width: 100px;
+
+}
+
+#vals li span.val {
+  font-weight: bold;
+    display: inline-block;
+    float: right;
+}
