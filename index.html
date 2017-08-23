@@ -1,0 +1,403 @@
+<html>
+  <head>
+    <title>PID Spaceship Proof of Concept</title>
+    <style>
+    html {
+      background: #000;
+    }
+      #canvas1 {
+        border: 1px solid gray;
+        background:url('bg.png');
+      }
+      #legend {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        border: 1px solid #fff;
+        background-color: rgba(0,0,0,0.3);
+      }
+      #reset {
+        position: absolute;
+        border: 1px solid #fff;
+        top: 30px;
+        left: 30px;
+        padding: 5px;
+        text-transform: uppercase;
+        color: #fff;
+        font-family: arial;
+        font-weight: bold;
+        font-size: 12px;
+      }
+      #reset:hover {
+        color: red;
+        border-color: red;
+        cursor: pointer;
+      }
+      #vals {
+        position: absolute;
+        right: 60px;
+        top: 40px;
+        list-style-type: none;
+        color: #fff;
+        font-family: arial;
+        width: 310px;
+      }
+      #vals li {
+        list-style-type: none;
+        padding: 5px;
+        height: 45px;
+        border-bottom: 1px solid rgba(0,0,0,0.1);
+      }
+
+      #vals li span.title {
+        display: inline-block;
+        float: left;
+        width: 100px;
+
+      }
+
+      #vals li span.val {
+        font-weight: bold;
+          display: inline-block;
+          float: right;
+      }
+    </style>
+
+  </head>
+
+  <body>
+    <canvas id="canvas1" width="1000" height="1000"></canvas>
+
+    <canvas id="legend" width="300" height="300"></canvas>
+
+    <div id="reset" onmousedown="reset()">Reset</div>
+
+    <div id="vals">
+      <ul>
+        <li><span class="title">Altitude:</span> <span class="val" id="altitude">0</span></li>
+        <li><span class="title">Mass:</span> <span class="val" id="mass">0</span></li>
+        <li><span class="title">Velocity:</span> <span class="val" id="velocity">0</span></li>
+        <li><span class="title">Acceleration:</span> <span class="val" id="acceleration">0</span></li>
+        <li><span class="title">Thrust:</span> <span class="val" id="thrust">0</span></li>
+        <li><span class="title">Gravity:</span> <span class="val" id="gravity">0</span></li>
+        <li><span class="title">Time:</span> <span class="val" id="seconds"> seconds</span></li>
+      </ul>
+    </div>
+
+    <script>
+
+      var ship = new Image(),
+          plume = new Image();
+
+      var plumes = {},
+          can = document.getElementById('canvas1'),
+          legend = document.getElementById('legend'),
+          ctx, lgd,
+          plumeRate = 0;
+
+      var rocket, x, y, accel, vel;
+
+      var tickCount, secondCount = 0;
+
+      function setup(){
+        setDefaults();
+        ship.src = "/Users/Alex/Work/lab/pid-canvas-ship/rocket-ship.svg";
+        plume.src = "/Users/Alex/Work/lab/pid-canvas-ship/cloud.svg";
+        window.requestAnimationFrame(loop);
+      }
+
+      function setDefaults(){
+        rocket = 'undefined';
+        x = can.width/2-100;
+        y = can.height-210;
+        mass = weight(100); // kg
+        // accel = speed(0); // m/s_2
+        accel = vector(speed(0), speed(0));
+        // grav = speed(9.8);  // m/s_2
+        grav = vector(speed(0), speed(9.8));
+        // vel = speed(0); // m/s
+        vel = vector(speed(0), speed(0)); // m/s
+        thrust = vector(0, 0); // kgm/s_2
+        tickCount = 0;
+        secondCount = 0;
+      }
+
+      function loop(){
+        //ALL
+        ctx = can.getContext('2d');
+
+        ctx.globalCompositeOperation = 'destination-over';
+        ctx.clearRect(0, 0, can.width, can.height); // clear canvas
+
+
+
+
+
+        //ROCKET
+        if(rocket === 'undefined'){
+          rocket = new Rocket(200, 200);
+        }
+
+        ctx.drawImage(ship, rocket.x(), rocket.y(), rocket.width, rocket.height);
+
+
+        //PLUME
+        if(Math.floor(tickCount/plumeRate) === tickCount/plumeRate && (thrust.y > 0 || thrust.x != 0)){
+          var newPlume = new Plume(80, 80);
+          plumes[newPlume.id] = newPlume;
+        }
+
+        for(var p in plumes){
+          var exPlume = plumes[p];
+          ctx.drawImage(plume, exPlume.x, exPlume.y, exPlume.width, exPlume.height);
+        }
+
+
+
+
+
+        //LEGEND
+        legend.width = legend.width;
+        legend.height = legend.height
+        lgd = legend.getContext('2d');
+
+        lgd.globalCompositeOperation = 'destination-over';
+        lgd.clearRect(0, 0, lgd.width, lgd.height); // clear canvas
+
+        var velStartY = legend.height/2,
+            velStartX = legend.width/2,
+            velYVector = velStartY - (vel.y * 30),
+            velXVector = velStartX - (vel.x * -30);
+
+        vectorVelocityArrow(lgd, velStartX, velStartY, velXVector, velYVector);
+
+        var thrustStartY = legend.height/2 + 100,
+            thrustStartX = legend.width/2 + 40,
+            thrustYVector = thrustStartY - (thrust.y * 30000),
+            thrustXVector = thrustStartX - (thrust.x * -30000);
+
+        vectorThrustArrow(lgd, thrustStartX, thrustStartY, thrustXVector, thrustYVector);
+
+
+
+
+
+        //PID
+
+        //0.5 - 2 seconds
+        if(tickCount <= 120){
+          thrust = vector(force(0), force(100));
+        }
+
+        //2 seconds - 5 seconds
+        if(tickCount >= 120 && tickCount <= 300){
+
+        }
+
+        //5 seconds - 10 seconds
+        if(tickCount >= 300 && tickCount <= 600){
+
+        }
+
+
+        if(rocket.y() >= can.height){
+          setDefaults();
+        }
+
+
+
+
+
+        //ALL
+        tickCount++;
+
+        accel = vector((thrust.x / mass/2), (thrust.y / mass) - grav.y);
+        vel = vector(vel.x + accel.x, vel.y + accel.y);
+
+        plumeRate = Math.round(20 - vel.y * 3);
+
+        window.requestAnimationFrame(loop);
+
+        log();
+      }
+
+      function reset(){
+        setDefaults();
+      }
+
+      function weight(val){
+        return val * 0.001;
+      }
+
+      function speed(val){
+        return val * 0.001;
+      }
+
+      function force(val){
+        return val * 0.00001;
+      }
+
+      function vector(x, y){
+        return {
+          x: x,
+          y: y
+        }
+      }
+
+      function Rocket(width, height){
+        var rocket = {};
+
+        rocket.x = function(curr){
+          var newX = (rocket._x || x) + vel.x;
+          rocket._x = newX;
+          return newX;
+        };
+
+        rocket.y = function(curr){
+          var newY = (rocket._y || y) - vel.y;
+          rocket._y = newY;
+          return newY;
+        };
+
+        rocket.width = rocket.width || width;
+        rocket.height = rocket.height || height;
+
+        return rocket;
+      }
+
+      function Plume(width, height){
+        var plume = {},
+            randScale = Math.random();
+
+        if(randScale < 0.4){
+          randScale = 0.4;
+        }
+        if(randScale > 0.6){
+          randScale = 0.6;
+        }
+
+        plume.time   = 10;
+        plume.width  = width * randScale;
+        plume.height = height * randScale;
+        plume.x      = (rocket.x() + 67) + 10* (1.8 - randScale);
+        plume.y      = rocket.y() + 150;
+        plume.id     = "PLUME-" + Math.ceil(Math.random()*100000);
+
+        plume.int = setInterval(function(){
+          plume.width  -= 0.1;
+          plume.height -= 0.1;
+          plume.x      -= 0.075;
+          plume.y      += 0.5;
+
+          if(plume.width < 0.2){
+            clearInterval(plume.int);
+            delete plumes[plume.id];
+          }
+        }, plume.time);
+
+        return plume;
+      }
+
+      function vectorVelocityArrow(context, fromx, fromy, tox, toy){
+        var headlen = 5,
+            angle = Math.atan2(toy - fromy, tox - fromx);
+
+        context.beginPath();
+        context.moveTo(fromx, fromy);
+        context.lineTo(tox, toy);
+        context.lineTo(tox-headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+        context.moveTo(tox, toy);
+        context.lineTo(tox-headlen * Math.cos(angle + Math.PI / 6),toy - headlen * Math.sin(angle + Math.PI / 6));
+
+        if(accel.y > 0){
+          context.strokeStyle = "#7CFC00";
+          context.fillStyle = "#7CFC00";
+        } else {
+          context.strokeStyle = "#AA0114";
+          context.fillStyle = "#AA0114";
+        }
+
+        context.font = "12px Arial";
+
+        context.stroke();
+        context.stroke();
+
+        var vx = Math.abs(vel.x),
+            vy = Math.abs(vel.y),
+            vh = Math.round(Math.sqrt(vx*vx + vy*vy) * 10);
+
+        context.fillText("v^: " + vh + " m/s", tox + 10, toy + 5);
+      }
+
+      function vectorThrustArrow(context, fromx, fromy, tox, toy){
+        var headlen = 5,
+            angle = Math.atan2(toy - fromy, tox - fromx);
+
+        context.beginPath();
+        context.moveTo(fromx, fromy);
+        context.lineTo(tox, toy);
+        context.lineTo(tox-headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+        context.moveTo(tox, toy);
+        context.lineTo(tox-headlen * Math.cos(angle + Math.PI / 6),toy - headlen * Math.sin(angle + Math.PI / 6));
+
+        if(thrust.y > 0){
+          context.strokeStyle = "blue";
+          context.fillStyle = "blue";
+        } else {
+          context.strokeStyle = "#551a8b";
+          context.fillStyle = "#551a8b";
+        }
+
+        context.font = "12px Arial";
+
+        context.stroke();
+        context.stroke();
+
+        var tx = Math.abs(thrust.x),
+            ty = Math.abs(thrust.y),
+            th = Math.round(Math.sqrt(tx*tx + ty*ty) * 100000);
+
+        context.fillText("t^: " + th + " kgm/s2", tox + 10, toy + 5);
+      }
+
+      function log (){
+        document.getElementById('altitude').innerHTML = "x: " + Math.round(((400 - rocket.x()) / 9.8) * -1) + " m <br/> y: " + Math.round((790 - rocket.y())/9.8) + " m";
+        document.getElementById('mass').innerHTML = Math.round(mass * 1000) + " kg";
+        document.getElementById('velocity').innerHTML = "x: " + Math.round(vel.x * 10) + " m/s" + "<br /> y: " + Math.round(vel.y * 10) + " m/s";
+        document.getElementById('acceleration').innerHTML = "x: " + Math.round(accel.x * 1000) + " m/s<sup>2</sup>" + "<br/> y: " + Math.round(accel.y * 1000) + " m/s<sup>2</sup>";
+        document.getElementById('thrust').innerHTML = "x: " + Math.round(thrust.x * 100000) + " kgm/s<sup>2</sup> <br/>y: " + Math.round(thrust.y * 100000) + " kgm/s<sup>2</sup>";
+        document.getElementById('gravity').innerHTML = grav.y * 1000 + " m/s<sup>2</sup>";
+        document.getElementById('seconds').innerHTML = secondCount + "<sup></sup>";
+      }
+
+      function leftHandler(){
+        thrust.x -= speed(0.1);
+      }
+      function upHandler(){
+        thrust.y += speed(0.1);
+      }
+      function rightHandler(){
+        thrust.x += speed(0.1);
+      }
+      function downHandler(){
+        thrust.y -= speed(0.1);
+      }
+
+      document.addEventListener('keydown', function(event) {
+        if(event.keyCode == 37) {
+            leftHandler();
+        } else if(event.keyCode == 38) {
+            upHandler();
+        } else if(event.keyCode == 39) {
+            rightHandler();
+        } else if(event.keyCode == 40) {
+            downHandler();
+        }
+      });
+
+      setup();
+
+    </script>
+  </body>
+
+</html>
