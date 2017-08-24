@@ -376,7 +376,7 @@ function vectorYawArrow(context, fromx, fromy, tox, toy){
   context.stroke();
   context.stroke();
 
-  context.fillText("Yaw: " + yaw + " degress", tox + 10, toy + 5);
+  context.fillText("Yaw: " + (yaw * 10).toFixed(1) + " degress", tox + 10, toy + 5);
 
 
   context.restore();
@@ -390,7 +390,7 @@ function log (){
   document.getElementById('thrust').innerHTML = "x: " + (thrust.x * 100000).toFixed(2) + " kgm/s<sup>2</sup> <br/>y: " + (thrust.y * 100000).toFixed(2) + " kgm/s<sup>2</sup>";
   document.getElementById('gravity').innerHTML = grav.y * 1000 + " m/s<sup>2</sup>";
   document.getElementById('seconds').innerHTML = secondCount + "<sup></sup>";
-  document.getElementById('yaw').innerHTML = yaw;
+  document.getElementById('yaw').innerHTML = (yaw * 10).toFixed(1);
 }
 
 function leftHandler(){
