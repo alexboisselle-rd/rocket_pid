@@ -21,7 +21,7 @@ function setup(){
 function setDefaults(){
   rocket = 'undefined';
   x = can.width/2-100;
-  y = can.height-210;
+  y = can.height-250;
   mass = weight(100); // kg
   // accel = speed(0); // m/s_2
   accel = vector(speed(0), speed(0));
@@ -32,7 +32,9 @@ function setDefaults(){
   r   = Math.PI/180 * 0;
   thrust = vector(0, 0); // kgm/s_2
   tickCount = 0;
+  yaw = 0;
   secondCount = 0;
+  motor = 0;
 }
 
 function loop(){
@@ -47,7 +49,7 @@ function loop(){
 
 
   //ROCKET
-  if(rocket === 'undefined'){
+  if(rocket === 'undefined' || !rocket.r){
     rocket = new Rocket(200, 200);
   }
 
@@ -57,6 +59,17 @@ function loop(){
 
   drawRotatedImage(ship, rocket.x(), rocket.y(), rocket.width, rocket.height, rocket.r(), ctx);
 
+  var yawStartY = rocket.y() + rocket.height,
+      yawStartX = rocket.x() + rocket.width/2,
+      yawYVector = yawStartY + (30),
+      yawXVector = yawStartX + (yaw * 20);
+
+  vectorYawArrow(ctx, yawStartX, yawStartY, yawXVector, yawYVector);
+
+
+
+
+
   //PLUME
   if(Math.floor(tickCount/plumeRate) === tickCount/plumeRate && (thrust.y > 0 || thrust.x != 0)){
     var newPlume = new Plume(80, 80);
@@ -65,8 +78,10 @@ function loop(){
 
   for(var p in plumes){
     var exPlume = plumes[p];
+    // drawRotatedImage(plume, exPlume.x, exPlume.y, exPlume.width, exPlume.height, exPlume.r, ctx);
     ctx.drawImage(plume, exPlume.x, exPlume.y, exPlume.width, exPlume.height);
   }
+
 
 
 
@@ -89,10 +104,11 @@ function loop(){
 
   var thrustStartY = legend.height/2 - 100,
       thrustStartX = legend.width/2 + 40,
-      thrustYVector = thrustStartY - (thrust.y * -30000),
-      thrustXVector = thrustStartX - (thrust.x * -30000);
+      thrustYVector = velStartY - (thrust.y * -30000),
+      thrustXVector = velStartX - (thrust.x * -30000);
 
-  vectorThrustArrow(lgd, thrustStartX, thrustStartY, thrustXVector, thrustYVector);
+  vectorThrustArrow(lgd, velStartX, velStartY, thrustXVector, thrustYVector);
+
 
 
 
@@ -100,10 +116,13 @@ function loop(){
 
   //PID
 
+  motor = 140;
+
   //0.5 - 2 seconds
-  if(tickCount <= 120){
-    thrust = vector(force(0), force(100));
-  }
+  // if(tickCount >= 30){
+  //   // thrust = vector(force(0), force(200), 0);
+  //   motor = 100;
+  // }
 
   //2 seconds - 5 seconds
   if(tickCount >= 120 && tickCount <= 300){
@@ -116,16 +135,24 @@ function loop(){
   }
 
 
-  if(rocket.y() >= can.height){
-    setDefaults();
-  }
-
-
 
 
 
   //ALL
   tickCount++;
+
+  if((tickCount/60).toFixed(0) == tickCount/60){
+    secondCount++;
+  }
+
+  if(thrust.y === 0){
+    thrust.x = 0;
+  }
+
+  thrust.x = force(Math.sin(rocket.r()*Math.PI/180) * motor);
+  thrust.y = force(Math.cos(rocket.r()*Math.PI/180) * motor);
+
+  console.log(thrust)
 
   accel = vector((thrust.x / mass/2), (thrust.y / mass) - grav.y);
   vel = vector(vel.x + accel.x, (vel.y + accel.y) < 0 - 5.4 ? 0 - 5.4 : vel.y + accel.y);
@@ -135,6 +162,14 @@ function loop(){
   window.requestAnimationFrame(loop);
 
   log();
+
+
+
+
+  // if(rocket.y() >= can.height){
+  //   setDefaults();
+  // }
+
 }
 
 function reset(){
@@ -153,10 +188,11 @@ function force(val){
   return val * 0.00001;
 }
 
-function vector(x, y){
+function vector(x, y, a){
   return {
     x: x,
-    y: y
+    y: y,
+    a: a || null
   }
 }
 
@@ -164,23 +200,23 @@ function Rocket(width, height){
   var rocket = {};
 
   rocket.x = function(curr){
-    var newX = (rocket._x || x) + vel.x;
+    var newX = (rocket._x || x) + vel.x * 4;
+
     rocket._x = newX;
     return newX;
   };
 
   rocket.y = function(curr){
-    var newY = (rocket._y || y) - Math.round(vel.y * 100) / 100;
+    var newY = (rocket._y || y) - vel.y;
 
     rocket._y = newY;
     return newY;
   };
 
   rocket.r = function(curr){
-    var newR = (rocket._r || r) + vel.x;
+    var newR = (rocket._r || r) + yaw;
 
     rocket._r = newR;
-    // console.log(newR);
     return newR;
   }
 
@@ -206,8 +242,9 @@ function Plume(width, height){
   plume.width  = width * randScale;
   plume.height = height * randScale;
   plume.x      = (rocket.x() + 67) + 10* (1.8 - randScale) + rocket.r() * -2;
-  plume.y      = rocket.y() + 110 + (Math.abs(rocket.r()) * -1);
+  plume.y      = rocket.y() + 180 + (Math.abs(rocket.r()) * -1);
   plume.id     = "PLUME-" + Math.ceil(Math.random() * 100000);
+  plume.r      = randScale *360;
 
   plume.int = setInterval(function(){
     plume.width  -= 0.1;
@@ -230,7 +267,7 @@ function drawRotatedImage(image, x, y, w, h, angle, context){
     context.save();
 
     // move to the middle of where we want to draw our image
-    context.translate(x + image.width/2, y);
+    context.translate(x + image.width/2, y + image.height/2);
 
     // rotate around that point, converting our
     // angle from degrees to radians
@@ -306,6 +343,45 @@ function vectorThrustArrow(context, fromx, fromy, tox, toy){
   context.fillText("t^: " + th + " kgm/s2", tox + 10, toy + 5);
 }
 
+
+function vectorYawArrow(context, fromx, fromy, tox, toy){
+  var headlen = 5,
+      angle = Math.atan2(toy - fromy, tox - fromx);
+
+  //
+  // context.save();
+  //
+  // // context.translate(fromx + ((tox-fromx)/2), fromy + toy/2);
+  //
+  // context.rotate(rocket.r() * Math.PI/180);
+
+  context.beginPath();
+
+  context.moveTo(fromx, fromy);
+  context.lineTo(tox, toy);
+  context.lineTo(tox-headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+  context.moveTo(tox, toy);
+  context.lineTo(tox-headlen * Math.cos(angle + Math.PI / 6),toy - headlen * Math.sin(angle + Math.PI / 6));
+
+  if(thrust.y > 0){
+    context.strokeStyle = "red";
+    context.fillStyle = "red";
+  } else {
+    context.strokeStyle = "#551a8b";
+    context.fillStyle = "#551a8b";
+  }
+
+  context.font = "12px Arial";
+
+  context.stroke();
+  context.stroke();
+
+  context.fillText("Yaw: " + yaw + " degress", tox + 10, toy + 5);
+
+
+  context.restore();
+}
+
 function log (){
   document.getElementById('altitude').innerHTML = "x: " + Math.round(((400 - rocket.x()) / 9.8) * -1) + " m <br/> y: " + Math.round((790 - rocket.y())/9.8) + " m";
   document.getElementById('mass').innerHTML = Math.round(mass * 1000) + " kg";
@@ -314,23 +390,35 @@ function log (){
   document.getElementById('thrust').innerHTML = "x: " + (thrust.x * 100000).toFixed(2) + " kgm/s<sup>2</sup> <br/>y: " + (thrust.y * 100000).toFixed(2) + " kgm/s<sup>2</sup>";
   document.getElementById('gravity').innerHTML = grav.y * 1000 + " m/s<sup>2</sup>";
   document.getElementById('seconds').innerHTML = secondCount + "<sup></sup>";
+  document.getElementById('yaw').innerHTML = yaw;
 }
 
 function leftHandler(){
-  thrust.x -= speed(0.1);
+  // thrust.x -= speed(0.1);
+  if(yaw - 0.1 <= -.45){
+    yaw = -.45;
+  } else {
+    yaw = yaw - 0.1;
+  }
 }
 function upHandler(){
-  thrust.y += speed(0.1);
+  // thrust.y += speed(0.1);
 }
 function rightHandler(){
-  thrust.x += speed(0.1);
+  // thrust.x += speed(0.1);
+  if(yaw + 0.1 >= .45){
+    yaw = .45;
+  } else {
+    yaw = yaw + 0.1;
+  }
 }
 function downHandler(){
-  if((thrust.y -= speed(0.1)) > 0){
-    thrust.y -= speed(0.1);
-  } else new Promise(function(resolve, reject) {
-    thrust.y = 0;
-  });
+  // if((thrust.y -= speed(0.1)) > 0){
+  //   thrust.y -= speed(0.1);
+  // } else {
+  //   thrust.y = 0;
+  //   thrust.x = 0;
+  // };
 }
 
 document.addEventListener('keydown', function(event) {
