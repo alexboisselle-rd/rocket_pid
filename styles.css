@@ -31,12 +31,19 @@ html {
 }
 #vals {
   position: absolute;
-  right: 60px;
-  top: 40px;
+  right: 20px;
+  top: 20px;
   list-style-type: none;
   color: #fff;
   font-family: arial;
   width: 310px;
+}
+#vals ul {
+  margin: 0px;
+  padding: 20px;
+  padding-bottom: 0px;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid;
 }
 #vals li {
   list-style-type: none;
@@ -44,16 +51,48 @@ html {
   height: 45px;
   border-bottom: 1px solid rgba(0,0,0,0.1);
 }
-
 #vals li span.title {
   display: inline-block;
   float: left;
   width: 100px;
 
 }
-
 #vals li span.val {
   font-weight: bold;
     display: inline-block;
     float: right;
+}
+#export {
+  position: absolute;
+  border: 1px solid #fff;
+  top: 30px;
+  left: 93px;
+  padding: 5px;
+  text-transform: uppercase;
+  color: #fff;
+  font-family: arial;
+  font-weight: bold;
+  font-size: 12px;
+}
+#export:hover {
+  color: red;
+  border-color: red;
+  cursor: pointer;
+}
+#exportVel {
+  position: absolute;
+  border: 1px solid #fff;
+  top: 60px;
+  left: 93px;
+  padding: 5px;
+  text-transform: uppercase;
+  color: #fff;
+  font-family: arial;
+  font-weight: bold;
+  font-size: 12px;
+}
+#exportVel:hover {
+  color: red;
+  border-color: red;
+  cursor: pointer;
 }

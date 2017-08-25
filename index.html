@@ -12,6 +12,9 @@
 
     <div id="reset" onmousedown="reset()">Reset</div>
 
+    <div id="export" onmousedown="exportYawAsCSV()">Export Yaw PID</div>
+    <div id="exportVel" onmousedown="exportVelAsCSV()">Export Vel PID</div>
+
     <div id="vals">
       <ul>
         <li><span class="title">Altitude:</span> <span class="val" id="altitude">0</span></li>
@@ -25,7 +28,12 @@
       </ul>
     </div>
 
+    <div id="chart"></div>
+    <div id="chart2"></div>
+
+    <script src="https://code.highcharts.com/highcharts.src.js"></script>
     <script src="canvas.js"></script>
+    <script src="export.js"></script>
   </body>
 
 </html>

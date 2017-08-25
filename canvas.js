@@ -5,11 +5,22 @@ var plumes = {},
     can = document.getElementById('canvas1'),
     legend = document.getElementById('legend'),
     ctx, lgd,
-    plumeRate = 0;
+    plumeRate = 0,
+    K_p, K_i, K_d;
 
 var rocket, x, y, accel, vel;
 
 var tickCount, secondCount = 0;
+
+var exportYaw = [],
+    exportVel = [],
+    exportAccel = [],
+    exportE = [],
+    exportD = [],
+    exportI = [],
+    exportP = [],
+    yawNeeded, yawDiff, reset, lastError,
+    K_p, K_i, K_d, T_i, T_d;
 
 function setup(){
   setDefaults();
@@ -32,9 +43,15 @@ function setDefaults(){
   r   = Math.PI/180 * 0;
   thrust = vector(0, 0); // kgm/s_2
   tickCount = 0;
-  yaw = 0;
+  yaw = 0.05;
   secondCount = 0;
   motor = 0;
+  spAngle = 0;
+  spXVel = 0;
+  spXAccel = 0;
+  spX = can.width / 2;
+  spY = can.height / 2;
+  reset = 0;
 }
 
 function loop(){
@@ -58,6 +75,8 @@ function loop(){
   // ctx.drawImage(ship, rocket.x(), rocket.y(), rocket.width, rocket.height);
 
   drawRotatedImage(ship, rocket.x(), rocket.y(), rocket.width, rocket.height, rocket.r(), ctx);
+
+  motor = 115;
 
   var yawStartY = rocket.y() + rocket.height,
       yawStartX = rocket.x() + rocket.width/2,
@@ -112,28 +131,53 @@ function loop(){
 
 
 
+  K_p = 0.1;
+
+  K_i = 0.01;
+  T_i = 275;
+
+  K_d = 0.1;
+  T_d = 10;
+
 
 
   //PID
 
-  motor = 140;
+  //u(t) = K_pe(t) + K_i [t\0] e(t)dt + K_d de(te)/dt
 
-  //0.5 - 2 seconds
-  // if(tickCount >= 30){
-  //   // thrust = vector(force(0), force(200), 0);
-  //   motor = 100;
-  // }
+  var k     = 0,
+      eXVel = Math.abs(spXVel - vel.x),
+      pVel  = eXVel * K_p,
+      iVel  = reset + (K_i/T_i) * eXVel,
+      dVel  = (K_d/T_d) * eXVel - lastError,
+      outputVel = pVel + iVel + dVel;
 
-  //2 seconds - 5 seconds
-  if(tickCount >= 120 && tickCount <= 300){
+      // outputVel = pVel + dVel;
+  //
+  // console.log("pVel: ", pVel)
+  // console.log("iVel: ", iVel)
+  console.log(rocket.r())
+  yawNeeded = getYawFromVel(outputVel, vel); //transform error into yaw angle
 
+  reset = iVel;
+  lastError = eXVel;
+
+  if(tickCount > 60) {
+     if(vel.x > 0){
+       yaw = 0 - Math.abs(yawNeeded);
+     } else {
+       yaw = 0 + Math.abs(yawNeeded);
+     }
   }
 
-  //5 seconds - 10 seconds
-  if(tickCount >= 300 && tickCount <= 600){
+  exportYaw.push(yawNeeded);
+  exportVel.push(vel.x);
+  exportAccel.push(accel.x);
 
-  }
-
+  exportE.push(eXVel);
+  exportP.push(pVel);
+  exportI.push(iVel);
+  exportD.push(dVel);
 
 
 
@@ -145,6 +189,46 @@ function loop(){
     secondCount++;
   }
 
+  if(tickCount == 600){
+    // exportYawAsCSV(10);
+    // exportVelAsCSV(10);
+    chart(exportVel, exportYaw, exportAccel);
+    chart2(exportP, exportI, exportD, exportE);
+  }
+
+  if(tickCount == 900){
+    // exportYawAsCSV(10);
+    // exportVelAsCSV(10);
+    chart(exportVel, exportYaw, exportAccel);
+    chart2(exportP, exportI, exportD, exportE);
+  }
+
+  if(tickCount == 1500){
+    // exportYawAsCSV(10);
+    // exportVelAsCSV(10);
+    chart(exportVel, exportYaw, exportAccel);
+    chart2(exportP, exportI, exportD, exportE);
+  }
+
+  if(tickCount == 3200){
+    // exportYawAsCSV(60);
+    // exportVelAsCSV(60);
+
+    chart(exportVel, exportYaw, exportAccel);
+    chart2(exportP, exportI, exportD, exportE);
+  }
+
+  if(tickCount == 6400){
+    exportYawAsCSV(120);
+    exportVelAsCSV(120);
+
+    chart(exportVel, exportYaw, exportAccel);
+    chart2(exportP, exportI, exportD);
+  }
+
+
+
+
   if(thrust.y === 0){
     thrust.x = 0;
   }
@@ -152,10 +236,17 @@ function loop(){
   thrust.x = force(Math.sin(rocket.r()*Math.PI/180) * motor);
   thrust.y = force(Math.cos(rocket.r()*Math.PI/180) * motor);
 
-  console.log(thrust)
 
-  accel = vector((thrust.x / mass/2), (thrust.y / mass) - grav.y);
+
+  // console.log(thrust)
+  accel = vector((thrust.x / mass), (thrust.y / mass) - grav.y);
   vel = vector(vel.x + accel.x, (vel.y + accel.y) < 0 - 5.4 ? 0 - 5.4 : vel.y + accel.y);
+
+  accel.x = accel.x;
+
+  vel.x = Number(Number(vel.x));
+
+  // console.log(vel.x)
 
   plumeRate = Math.round(20 - vel.y * 3);
 
@@ -196,11 +287,29 @@ function vector(x, y, a){
   }
 }
 
+function getYawFromAccel(accel, motor){
+  //we get the inverse cos of the triangle to find the angle by the length of the adjacent & hyp
+  var yaw = Math.acos(accel/motor) * 360 / (Math.PI * 2) - 90;
+  return yaw;
+}
+
+function getYawFromVel(outputVelX, currentVector){
+
+  var currentVelH = Math.sqrt(Math.pow(currentVector.x, 2) + Math.pow(currentVector.y, 2)) * 100;
+
+  //we get the inverse cos of the triangle to find the angle by the length of the adjacent & hyp
+  var yaw = Number(Math.acos(outputVelX/currentVelH) * 360 / (Math.PI * 2) - 90);
+
+  // yaw = Number(yaw.toFixed(2));
+  // console.log(yaw)
+  return yaw;
+}
+
 function Rocket(width, height){
   var rocket = {};
 
   rocket.x = function(curr){
-    var newX = (rocket._x || x) + vel.x * 4;
+    var newX = (rocket._x || x) + vel.x * 1;
 
     rocket._x = newX;
     return newX;
@@ -217,6 +326,7 @@ function Rocket(width, height){
     var newR = (rocket._r || r) + yaw;
 
     rocket._r = newR;
+
     return newR;
   }
 
@@ -432,5 +542,17 @@ document.addEventListener('keydown', function(event) {
       downHandler();
   }
 });
+
+function exportYawAsCSV(sec){
+  if(exportYaw.length > 0){
+    exportAsCSV(exportYaw, "yawPID" + (sec ? " " + sec + " seconds" : ""));
+  }
+}
+
+function exportVelAsCSV(sec){
+  if(exportVel.length > 0){
+    exportAsCSV(exportVel, "velPID" + (sec ? " " + sec + " seconds" : ""));
+  }
+}
 
 setup();
