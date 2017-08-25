@@ -33,17 +33,17 @@ function setDefaults(){
   rocket = 'undefined';
   x = can.width/2-100;
   y = can.height-250;
-  mass = weight(100); // kg
+  mass = weight(4); // kg
   // accel = speed(0); // m/s_2
   accel = vector(speed(0), speed(0));
   // grav = speed(9.8);  // m/s_2
   grav = vector(speed(0), speed(9.8));
   // vel = speed(0); // m/s
   vel = vector(speed(0), speed(0)); // m/s
-  r   = Math.PI/180 * 0;
+  r   = 45;
   thrust = vector(0, 0); // kgm/s_2
   tickCount = 0;
-  yaw = 0.05;
+  yaw = 0;
   secondCount = 0;
   motor = 0;
   spAngle = 0;
@@ -76,7 +76,7 @@ function loop(){
 
   drawRotatedImage(ship, rocket.x(), rocket.y(), rocket.width, rocket.height, rocket.r(), ctx);
 
-  motor = 115;
+  motor = 16;
 
   var yawStartY = rocket.y() + rocket.height,
       yawStartX = rocket.x() + rocket.width/2,
@@ -131,13 +131,13 @@ function loop(){
 
 
 
-  K_p = 0.1;
+  K_p = 0.01;
 
-  K_i = 0.01;
-  T_i = 275;
+  K_i = 100;
+  T_i = 500;
 
-  K_d = 0.1;
-  T_d = 10;
+  K_d = 1;
+  T_d = 1;
 
 
 
@@ -152,14 +152,17 @@ function loop(){
       dVel  = (K_d/T_d) * eXVel - lastError,
       outputVel = pVel + iVel + dVel;
 
-      // outputVel = pVel + dVel;
-  //
-  // console.log("pVel: ", pVel)
-  // console.log("iVel: ", iVel)
-  console.log(rocket.r())
   yawNeeded = getYawFromVel(outputVel, vel); //transform error into yaw angle
 
-  reset = iVel;
+  //if old diff is pos and new diff is neg, reset reset
+  if((lastError > 0) && ((eXVel - lastError < 0))){
+    reset = 0;
+  } else if((lastError < 0) && ((eXVel - lastError > 0))) {
+    reset = 0;
+  } else {
+    reset = iVel;
+  }
+
   lastError = eXVel;
 
   if(tickCount > 60) {
@@ -170,7 +173,7 @@ function loop(){
      }
   }
 
-  exportYaw.push(yawNeeded);
+  exportYaw.push(yaw);
   exportVel.push(vel.x);
   exportAccel.push(accel.x);
 
@@ -226,6 +229,14 @@ function loop(){
     chart2(exportP, exportI, exportD);
   }
 
+  if(tickCount == 12000){
+    exportYawAsCSV(240);
+    exportVelAsCSV(240);
+
+    chart(exportVel, exportYaw, exportAccel);
+    chart2(exportP, exportI, exportD);
+  }
+
 
 
 
@@ -233,16 +244,19 @@ function loop(){
     thrust.x = 0;
   }
 
+
+
   thrust.x = force(Math.sin(rocket.r()*Math.PI/180) * motor);
   thrust.y = force(Math.cos(rocket.r()*Math.PI/180) * motor);
 
 
+  if(tickCount > 240){
+    thrust.y = 0;
+  }
 
   // console.log(thrust)
   accel = vector((thrust.x / mass), (thrust.y / mass) - grav.y);
   vel = vector(vel.x + accel.x, (vel.y + accel.y) < 0 - 5.4 ? 0 - 5.4 : vel.y + accel.y);
-
-  accel.x = accel.x;
 
   vel.x = Number(Number(vel.x));
 
@@ -325,6 +339,7 @@ function Rocket(width, height){
   rocket.r = function(curr){
     var newR = (rocket._r || r) + yaw;
 
+    console.log(newR)
     rocket._r = newR;
 
     return newR;
