@@ -33,14 +33,14 @@ function setDefaults(){
   rocket = 'undefined';
   x = can.width/2-100;
   y = can.height-250;
-  mass = weight(4); // kg
+  mass = weight(0.7); // kg
   // accel = speed(0); // m/s_2
   accel = vector(speed(0), speed(0));
   // grav = speed(9.8);  // m/s_2
   grav = vector(speed(0), speed(9.8));
   // vel = speed(0); // m/s
   vel = vector(speed(0), speed(0)); // m/s
-  r   = 45;
+  r = -45;
   thrust = vector(0, 0); // kgm/s_2
   tickCount = 0;
   yaw = 0;
@@ -76,7 +76,7 @@ function loop(){
 
   drawRotatedImage(ship, rocket.x(), rocket.y(), rocket.width, rocket.height, rocket.r(), ctx);
 
-  motor = 16;
+  motor = 0.7;
 
   var yawStartY = rocket.y() + rocket.height,
       yawStartX = rocket.x() + rocket.width/2,
@@ -131,6 +131,14 @@ function loop(){
 
 
 
+
+
+
+
+  //PID
+
+  //u(t) = K_pe(t) + K_i [t\0] e(t)dt + K_d de(te)/dt
+
   K_p = 0.01;
 
   K_i = 100;
@@ -138,12 +146,6 @@ function loop(){
 
   K_d = 1;
   T_d = 1;
-
-
-
-  //PID
-
-  //u(t) = K_pe(t) + K_i [t\0] e(t)dt + K_d de(te)/dt
 
   var k     = 0,
       eXVel = Math.abs(spXVel - vel.x),
@@ -165,7 +167,13 @@ function loop(){
 
   lastError = eXVel;
 
-  if(tickCount > 60) {
+
+  if(tickCount > 05) {
+
+    if(Math.abs(yawNeeded) > 0.6){
+      yawNeeded = 0.6
+    }
+
      if(vel.x > 0){
        yaw = 0 - Math.abs(yawNeeded);
      } else {
@@ -258,6 +266,10 @@ function loop(){
   accel = vector((thrust.x / mass), (thrust.y / mass) - grav.y);
   vel = vector(vel.x + accel.x, (vel.y + accel.y) < 0 - 5.4 ? 0 - 5.4 : vel.y + accel.y);
 
+
+
+  console.log(vel.x)
+
   vel.x = Number(Number(vel.x));
 
   // console.log(vel.x)
@@ -275,6 +287,14 @@ function loop(){
   //   setDefaults();
   // }
 
+}
+
+function drag(x){
+  var area = (2 * Math.PI * (rocket.width/2) * rocket.height) + (2 * Math.PI * Math.pow(rocket.width/2, 2));
+
+  var drag = 0.5 * (1.2 * Math.pow(x, 2) / 2) * area;
+
+  return drag;
 }
 
 function reset(){
@@ -339,7 +359,7 @@ function Rocket(width, height){
   rocket.r = function(curr){
     var newR = (rocket._r || r) + yaw;
 
-    console.log(newR)
+    // console.log(newR)
     rocket._r = newR;
 
     return newR;
@@ -512,7 +532,7 @@ function log (){
   document.getElementById('mass').innerHTML = Math.round(mass * 1000) + " kg";
   document.getElementById('velocity').innerHTML = "x: " + (vel.x * 10).toFixed(2) + " m/s" + "<br /> y: " + (vel.y * 10).toFixed(2) + " m/s";
   document.getElementById('acceleration').innerHTML = "x: " + (accel.x * 1000).toFixed(2) + " m/s<sup>2</sup>" + "<br/> y: " + (accel.y * 1000).toFixed(2) + " m/s<sup>2</sup>";
-  document.getElementById('thrust').innerHTML = "x: " + (thrust.x * 100000).toFixed(2) + " kgm/s<sup>2</sup> <br/>y: " + (thrust.y * 100000).toFixed(2) + " kgm/s<sup>2</sup>";
+  document.getElementById('thrust').innerHTML = "x: " + (thrust.x * 100000).toFixed(2) + " N <br/>y: " + (thrust.y * 100000).toFixed(2) + " N";
   document.getElementById('gravity').innerHTML = grav.y * 1000 + " m/s<sup>2</sup>";
   document.getElementById('seconds').innerHTML = secondCount + "<sup></sup>";
   document.getElementById('yaw').innerHTML = (yaw * 10).toFixed(1);
