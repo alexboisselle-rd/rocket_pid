@@ -24,8 +24,8 @@ var exportYaw = [],
 
 function setup(){
   setDefaults();
-  ship.src = "/Users/Alex/Work/lab/pid-canvas-ship/rocket-ship.svg";
-  plume.src = "/Users/Alex/Work/lab/pid-canvas-ship/cloud.svg";
+  ship.src = "/rocket-ship.svg";
+  plume.src = "/cloud.svg";
   window.requestAnimationFrame(loop);
 }
 
@@ -76,7 +76,7 @@ function loop(){
 
   drawRotatedImage(ship, rocket.x(), rocket.y(), rocket.width, rocket.height, rocket.r(), ctx);
 
-  motor = 0.7;
+  motor = 1;
 
   var yawStartY = rocket.y() + rocket.height,
       yawStartX = rocket.x() + rocket.width/2,
